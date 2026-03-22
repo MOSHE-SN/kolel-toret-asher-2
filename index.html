@@ -107,7 +107,6 @@
             font-weight: bold;
         }
 
-        /* --- הגדרות Firebase (מסך ראשוני) --- */
         .setup-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: var(--background-gradient);
@@ -126,9 +125,7 @@
             padding: 12px 30px; border-radius: 8px; font-size: 1.1em;
             cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold;
         }
-        .setup-box button:hover { background: var(--secondary-color); }
         .setup-box .error { color: var(--danger-color); font-size: 0.9em; margin-top: 5px; }
-        .setup-box code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; direction: ltr; display: inline-block; font-size: 0.9em; }
 
         .footer-note {
             text-align: center; margin-top: 25px; padding: 15px;
@@ -138,29 +135,22 @@
 </head>
 <body>
 
-    <!-- מסך הגדרות Firebase - מופיע רק בפעם הראשונה -->
+    <!-- מסך הגדרות Firebase -->
     <div class="setup-overlay" id="setup-overlay">
         <div class="setup-box">
             <h2>⚙️ הגדרה ראשונית (פעם אחת בלבד)</h2>
-            <p>
-                כדי שהנתונים יהיו משותפים, צריך לחבר מסד נתונים חינמי של Firebase.<br>
-                <strong>פעל לפי המדריך שקיבלת</strong>, והדבק כאן את הפרטים:
-            </p>
-            <input type="text" id="setup-url" placeholder="Database URL (לדוגמה: https://xxx.firebaseio.com)">
-            <input type="text" id="setup-key" placeholder="API Key (לדוגמה: AIzaSy...)">
+            <p>הדבק כאן את כתובת מסד הנתונים מ-Firebase:</p>
+            <input type="text" id="setup-url" placeholder="https://xxx-default-rtdb.firebaseio.com">
             <button onclick="saveSetup()">שמור והתחל</button>
             <div class="error" id="setup-error"></div>
-            <br>
-            <p style="font-size: 0.85em; color: #999;">
-                הפרטים נשמרים בדפדפן שלך בלבד. תצטרך להגדיר את זה גם בדפדפן של החבר.
-            </p>
+            <p style="font-size: 0.85em; color: #999;">הפרטים נשמרים בדפדפן שלך. גם החבר צריך להגדיר את זה אצלו.</p>
         </div>
     </div>
 
     <!-- האתר הראשי -->
     <div class="container" id="main-app" style="display:none;">
         <div class="header-section">
-            <h1 id="main-title">חשבון הבנק של כולל 'תורת אשר'</h1>
+            <h1>חשבון הבנק של כולל 'תורת אשר'</h1>
         </div>
 
         <div class="control-section">
@@ -179,7 +169,7 @@
         </div>
 
         <div class="table-container">
-            <table id="ledger">
+            <table>
                 <thead>
                     <tr>
                         <th width="40px">#</th>
@@ -195,23 +185,17 @@
             <button class="add-row-btn" onclick="addRow()">+ הוסף שורה חדשה</button>
         </div>
 
-        <div class="footer-note">
-            בהמשך — חיבור אוטומטי ל-API של נדרים פלוס
-        </div>
+        <div class="footer-note">בהמשך — חיבור אוטומטי ל-API של נדרים פלוס</div>
     </div>
 
     <script>
-        // ============ הגדרות Firebase ============
         let FIREBASE_URL = localStorage.getItem('firebase_url') || '';
-        let FIREBASE_KEY = localStorage.getItem('firebase_key') || '';
-
         let baseBalance = 0;
         let rowsData = Array.from({length: 20}, () => ({date: '', expense: '', notes: ''}));
         let saveTimeout;
 
-        // --- מסך הגדרות ---
         function checkSetup() {
-            if (FIREBASE_URL && FIREBASE_KEY) {
+            if (FIREBASE_URL) {
                 document.getElementById('setup-overlay').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
                 renderTable();
@@ -221,29 +205,19 @@
 
         function saveSetup() {
             const url = document.getElementById('setup-url').value.trim();
-            const key = document.getElementById('setup-key').value.trim();
             const errEl = document.getElementById('setup-error');
-
-            if (!url || !key) {
-                errEl.innerText = 'יש למלא את שני השדות';
-                return;
-            }
+            if (!url) { errEl.innerText = 'יש למלא את הכתובת'; return; }
             if (!url.includes('firebaseio.com') && !url.includes('firebasedatabase.app')) {
-                errEl.innerText = 'ה-URL צריך להיות כתובת של Firebase (מכיל firebaseio.com)';
-                return;
+                errEl.innerText = 'הכתובת צריכה להכיל firebaseio.com'; return;
             }
-
-            FIREBASE_URL = url.replace(/\/$/, ''); // מוחק / בסוף
-            FIREBASE_KEY = key;
+            FIREBASE_URL = url.replace(/\/$/, '');
             localStorage.setItem('firebase_url', FIREBASE_URL);
-            localStorage.setItem('firebase_key', FIREBASE_KEY);
             checkSetup();
         }
 
-        // --- Firebase REST API ---
+        // === Firebase REST API — ללא אימות (מצב בדיקה) ===
         function firebaseSave(data) {
-            const url = FIREBASE_URL + '/kolel_data.json?auth=' + FIREBASE_KEY;
-            return fetch(url, {
+            return fetch(FIREBASE_URL + '/kolel_data.json', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -251,11 +225,9 @@
         }
 
         function firebaseLoad() {
-            const url = FIREBASE_URL + '/kolel_data.json?auth=' + FIREBASE_KEY;
-            return fetch(url).then(r => r.json());
+            return fetch(FIREBASE_URL + '/kolel_data.json').then(r => r.json());
         }
 
-        // --- לוגיקה (זהה לקוד המקורי של גימיני) ---
         function escapeHTML(str) { return String(str || '').replace(/"/g, '&quot;'); }
 
         function renderTable() {
@@ -303,10 +275,8 @@
                     maxFilledRow = idx;
                 }
             });
-
             let runningBalance = baseBalance;
             let lastUpdatedBalance = baseBalance;
-
             rowsData.forEach((row, idx) => {
                 const i = idx + 1;
                 const expenseValue = parseFloat(row.expense);
@@ -337,9 +307,9 @@
                         statusEl.innerText = "✓ נשמר";
                         setTimeout(() => { statusEl.innerText = ""; }, 2000);
                     } else {
-                        statusEl.innerText = "⚠️ שגיאת שמירה";
+                        r.text().then(t => { statusEl.innerText = "⚠️ שגיאה: " + r.status; console.error(t); });
                     }
-                }).catch(() => { statusEl.innerText = "⚠️ שגיאת שמירה"; });
+                }).catch(err => { statusEl.innerText = "⚠️ " + err.message; console.error(err); });
             }, 1000);
         }
 
@@ -363,13 +333,13 @@
                     renderTable();
                     statusEl.innerText = "";
                 })
-                .catch(() => { 
-                    statusEl.innerText = "(לא הצלחתי לטעון - בדוק חיבור)"; 
+                .catch(err => { 
+                    statusEl.innerText = "⚠️ " + err.message;
+                    console.error(err);
                     renderTable();
                 });
         }
 
-        // --- הפעלה ראשונית ---
         window.onload = checkSetup;
     </script>
 </body>
