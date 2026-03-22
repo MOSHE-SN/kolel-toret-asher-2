@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול כספי עמותה</title>
+    
+    <style>
+        :root {
+            --primary-color: #1e3c72;
+            --secondary-color: #2a5298;
+            --accent-color: #3498db;
+            --background-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #e2e8f0;
+            --danger-color: #e74c3c;
+            --success-color: #27ae60;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--background-gradient); 
+            background-attachment: fixed;
+            color: var(--text-color); 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+
+        .container { 
+            max-width: 1100px; 
+            margin: 30px auto; 
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            padding: 40px;
+            min-height: 400px;
+        }
+
+        .header-section { text-align: center; margin-bottom: 30px; }
+        .header-section h1 { color: var(--primary-color); font-size: 2.8em; margin: 0; font-weight: 800;}
+        
+        .control-section { 
+            background-color: #f8fafc; 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 30px; 
+            border: 1px solid var(--border-color);
+            display: flex; 
+            gap: 15px; 
+            align-items: center; 
+        }
+
+        .dashboard { display: flex; justify-content: space-around; gap: 20px; margin-bottom: 30px; }
+        .card { 
+            background-color: var(--card-bg); 
+            border-radius: 12px; 
+            padding: 25px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            flex: 1; 
+            text-align: center; 
+            border: 1px solid var(--border-color); 
+        }
+        .card.highlight { border-bottom: 5px solid var(--accent-color); }
+        .card h3 { margin: 0 0 15px 0; font-size: 1.2em; color: #7f8c8d; }
+        .card .amount { font-size: 2.5em; font-weight: bold; color: var(--primary-color); direction: ltr; display: inline-block; }
+        
+        input[type="text"], input[type="number"] { 
+            padding: 10px 15px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            font-size: 1em; 
+            font-family: inherit; 
+            width: 100%; 
+            box-sizing: border-box;
+            background-color: #f8fafc;
+        }
+
+        .table-container { 
+            background-color: var(--card-bg); 
+            border-radius: 12px; 
+            overflow-x: auto; 
+        }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
+        th, td { padding: 15px 10px; text-align: right; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        th { background-color: #f1f5f9; color: var(--primary-color); font-weight: bold; font-size: 1.1em; }
+        
+        .balance-cell { font-weight: bold; color: var(--primary-color); direction: ltr; text-align: right; font-size: 1.1em; }
+        .loading-text { font-size: 14px; color: #95a5a6; font-weight: bold; margin-right: 10px; }
+        .success-text { color: var(--success-color); }
+
+        .delete-btn { background: none; border: none; color: #bdc3c7; font-size: 1.2em; cursor: pointer; padding: 5px 10px; }
+        .delete-btn:hover { color: var(--danger-color); }
+
+        .add-row-btn {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto 10px auto;
+            font-weight: bold;
+        }
+
+        /* --- הגדרות Firebase (מסך ראשוני) --- */
+        .setup-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--background-gradient);
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .setup-box {
+            background: white; border-radius: 16px; padding: 40px; max-width: 600px; width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: right;
+        }
+        .setup-box h2 { color: var(--primary-color); margin-top: 0; }
+        .setup-box p { color: #555; line-height: 1.8; }
+        .setup-box input { margin-bottom: 12px; }
+        .setup-box button {
+            background: var(--primary-color); color: white; border: none;
+            padding: 12px 30px; border-radius: 8px; font-size: 1.1em;
+            cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold;
+        }
+        .setup-box button:hover { background: var(--secondary-color); }
+        .setup-box .error { color: var(--danger-color); font-size: 0.9em; margin-top: 5px; }
+        .setup-box code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; direction: ltr; display: inline-block; font-size: 0.9em; }
+
+        .footer-note {
+            text-align: center; margin-top: 25px; padding: 15px;
+            color: #95a5a6; font-size: 0.9em; border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- מסך הגדרות Firebase - מופיע רק בפעם הראשונה -->
+    <div class="setup-overlay" id="setup-overlay">
+        <div class="setup-box">
+            <h2>⚙️ הגדרה ראשונית (פעם אחת בלבד)</h2>
+            <p>
+                כדי שהנתונים יהיו משותפים, צריך לחבר מסד נתונים חינמי של Firebase.<br>
+                <strong>פעל לפי המדריך שקיבלת</strong>, והדבק כאן את הפרטים:
+            </p>
+            <input type="text" id="setup-url" placeholder="Database URL (לדוגמה: https://xxx.firebaseio.com)">
+            <input type="text" id="setup-key" placeholder="API Key (לדוגמה: AIzaSy...)">
+            <button onclick="saveSetup()">שמור והתחל</button>
+            <div class="error" id="setup-error"></div>
+            <br>
+            <p style="font-size: 0.85em; color: #999;">
+                הפרטים נשמרים בדפדפן שלך בלבד. תצטרך להגדיר את זה גם בדפדפן של החבר.
+            </p>
+        </div>
+    </div>
+
+    <!-- האתר הראשי -->
+    <div class="container" id="main-app" style="display:none;">
+        <div class="header-section">
+            <h1 id="main-title">חשבון הבנק של כולל 'תורת אשר'</h1>
+        </div>
+
+        <div class="control-section">
+            <input type="number" id="manual-nedarim-balance" placeholder="הזן יתרה כוללת בנדרים פלוס..." oninput="updateBaseBalance()">
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <h3>יתרה עדכנית בנדרים פלוס</h3>
+                <div class="amount"><span id="nedarim-total">0</span> ₪</div>
+            </div>
+            <div class="card highlight">
+                <h3>יתרה בחשבון <span id="sync-status" class="loading-text"></span></h3>
+                <div class="amount"><span id="final-balance">0</span> ₪</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="ledger">
+                <thead>
+                    <tr>
+                        <th width="40px">#</th>
+                        <th width="150px">תאריך</th>
+                        <th width="180px">הסכום שיצא מהעמותה</th>
+                        <th width="150px">יתרה בחשבון</th>
+                        <th width="50px">מחק</th>
+                        <th>הערות</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+            <button class="add-row-btn" onclick="addRow()">+ הוסף שורה חדשה</button>
+        </div>
+
+        <div class="footer-note">
+            בהמשך — חיבור אוטומטי ל-API של נדרים פלוס
+        </div>
+    </div>
+
+    <script>
+        // ============ הגדרות Firebase ============
+        let FIREBASE_URL = localStorage.getItem('firebase_url') || '';
+        let FIREBASE_KEY = localStorage.getItem('firebase_key') || '';
+
+        let baseBalance = 0;
+        let rowsData = Array.from({length: 20}, () => ({date: '', expense: '', notes: ''}));
+        let saveTimeout;
+
+        // --- מסך הגדרות ---
+        function checkSetup() {
+            if (FIREBASE_URL && FIREBASE_KEY) {
+                document.getElementById('setup-overlay').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                renderTable();
+                loadDataFromFirebase();
+            }
+        }
+
+        function saveSetup() {
+            const url = document.getElementById('setup-url').value.trim();
+            const key = document.getElementById('setup-key').value.trim();
+            const errEl = document.getElementById('setup-error');
+
+            if (!url || !key) {
+                errEl.innerText = 'יש למלא את שני השדות';
+                return;
+            }
+            if (!url.includes('firebaseio.com') && !url.includes('firebasedatabase.app')) {
+                errEl.innerText = 'ה-URL צריך להיות כתובת של Firebase (מכיל firebaseio.com)';
+                return;
+            }
+
+            FIREBASE_URL = url.replace(/\/$/, ''); // מוחק / בסוף
+            FIREBASE_KEY = key;
+            localStorage.setItem('firebase_url', FIREBASE_URL);
+            localStorage.setItem('firebase_key', FIREBASE_KEY);
+            checkSetup();
+        }
+
+        // --- Firebase REST API ---
+        function firebaseSave(data) {
+            const url = FIREBASE_URL + '/kolel_data.json?auth=' + FIREBASE_KEY;
+            return fetch(url, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        }
+
+        function firebaseLoad() {
+            const url = FIREBASE_URL + '/kolel_data.json?auth=' + FIREBASE_KEY;
+            return fetch(url).then(r => r.json());
+        }
+
+        // --- לוגיקה (זהה לקוד המקורי של גימיני) ---
+        function escapeHTML(str) { return String(str || '').replace(/"/g, '&quot;'); }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            rowsData.forEach((row, idx) => {
+                const i = idx + 1;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${i}</td>
+                    <td><input type="text" placeholder="תאריך..." value="${escapeHTML(row.date)}" oninput="updateRowData(${idx}, 'date', this.value)"></td>
+                    <td><input type="number" placeholder="הכנס סכום" value="${escapeHTML(row.expense)}" oninput="updateRowData(${idx}, 'expense', this.value)" min="0"></td>
+                    <td class="balance-cell" id="balance-${i}"></td>
+                    <td><button class="delete-btn" onclick="deleteRow(${idx})">✖</button></td>
+                    <td><input type="text" placeholder="הערות..." value="${escapeHTML(row.notes)}" oninput="updateRowData(${idx}, 'notes', this.value)"></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            updateLocalBalances();
+        }
+
+        function updateRowData(idx, field, value) {
+            rowsData[idx][field] = value;
+            calculateAndSave();
+        }
+
+        function addRow() {
+            rowsData.push({date: '', expense: '', notes: ''});
+            renderTable();
+            calculateAndSave();
+        }
+
+        function deleteRow(idx) {
+            if(confirm('למחוק שורה זו?')) {
+                rowsData.splice(idx, 1);
+                renderTable();
+                calculateAndSave();
+            }
+        }
+
+        function updateLocalBalances() {
+            let maxFilledRow = -1;
+            rowsData.forEach((row, idx) => {
+                if (row.date.trim() !== "" || row.notes.trim() !== "" || String(row.expense).trim() !== "") {
+                    maxFilledRow = idx;
+                }
+            });
+
+            let runningBalance = baseBalance;
+            let lastUpdatedBalance = baseBalance;
+
+            rowsData.forEach((row, idx) => {
+                const i = idx + 1;
+                const expenseValue = parseFloat(row.expense);
+                if (!isNaN(expenseValue) && expenseValue >= 0) {
+                    runningBalance -= expenseValue;
+                    lastUpdatedBalance = runningBalance;
+                }
+                const balanceCell = document.getElementById(`balance-${i}`);
+                if (balanceCell) {
+                    balanceCell.innerText = (idx <= maxFilledRow) ? '₪ ' + runningBalance.toLocaleString() : '';
+                }
+            });
+            document.getElementById('final-balance').innerText = lastUpdatedBalance.toLocaleString();
+        }
+
+        function calculateAndSave() {
+            updateLocalBalances();
+            const statusEl = document.getElementById('sync-status');
+            statusEl.className = 'loading-text';
+            statusEl.innerText = "(ממתין...)";
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                statusEl.innerText = "(שומר...)";
+                firebaseSave({ baseBalance, rows: rowsData })
+                .then(r => {
+                    if (r.ok) {
+                        statusEl.className = 'loading-text success-text';
+                        statusEl.innerText = "✓ נשמר";
+                        setTimeout(() => { statusEl.innerText = ""; }, 2000);
+                    } else {
+                        statusEl.innerText = "⚠️ שגיאת שמירה";
+                    }
+                }).catch(() => { statusEl.innerText = "⚠️ שגיאת שמירה"; });
+            }, 1000);
+        }
+
+        function updateBaseBalance() {
+            baseBalance = parseFloat(document.getElementById('manual-nedarim-balance').value) || 0;
+            document.getElementById('nedarim-total').innerText = baseBalance.toLocaleString();
+            calculateAndSave();
+        }
+
+        function loadDataFromFirebase() {
+            const statusEl = document.getElementById('sync-status');
+            statusEl.innerText = "(טוען...)";
+            firebaseLoad()
+                .then(data => {
+                    if (data && data.baseBalance !== undefined) {
+                        baseBalance = data.baseBalance;
+                        document.getElementById('manual-nedarim-balance').value = baseBalance || '';
+                        document.getElementById('nedarim-total').innerText = baseBalance.toLocaleString();
+                    }
+                    if (data && data.rows && data.rows.length > 0) rowsData = data.rows;
+                    renderTable();
+                    statusEl.innerText = "";
+                })
+                .catch(() => { 
+                    statusEl.innerText = "(לא הצלחתי לטעון - בדוק חיבור)"; 
+                    renderTable();
+                });
+        }
+
+        // --- הפעלה ראשונית ---
+        window.onload = checkSetup;
+    </script>
+</body>
+</html>
